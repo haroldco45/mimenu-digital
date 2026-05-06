@@ -1,0 +1,21 @@
+{
+  "name": "MiMenú Digital",
+  "short_name": "MiMenú",
+  "description": "Menú digital estilo feed para tu restaurante",
+  "start_url": "./index.html?pwa=1",
+  "display": "standalone",
+  "background_color": "#0a0a0f",
+  "theme_color": "#f5a623",
+  "orientation": "portrait-primary",
+  "lang": "es",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "categories": ["food", "business"],
+  "share_target": {
+    "action": "./index.html",
+    "method": "GET",
+    "params": { "title": "title", "text": "text", "url": "url" }
+  }
+}
