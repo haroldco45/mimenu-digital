@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title id="page-title">MiMenú Digital</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#f5a623">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MiMenú">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+
+<!-- Open Graph / Preview al compartir -->
+<meta property="og:type" content="website">
+<meta property="og:title" id="og-title" content="MiMenú Digital">
+<meta property="og:description" id="og-desc" content="Ve nuestro menú completo con fotos y precios">
+<meta property="og:image" id="og-image" content="icons/icon-512.png">
+<meta property="og:url" id="og-url" content="">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" id="tw-title" content="MiMenú Digital">
+<meta name="twitter:description" id="tw-desc" content="Ve nuestro menú completo con fotos y precios">
+<meta name="twitter:image" id="tw-image" content="icons/icon-512.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #13131a;
+  --surface2: #1c1c28;
+  --accent: #f5a623;
+  --accent2: #ff6b35;
+  --text: #f0ede8;
+  --muted: #6b6b80;
+  --border: rgba(245,166,35,0.12);
+  --radius: 16px;
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; background:var(--bg); color:var(--text); font-family:var(--font-body); overscroll-behavior:none; }
+
+/* ──────────────── SPLASH ──────────────── */
+#splash {
+  position:fixed; inset:0; z-index:9999;
+  background:var(--bg);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:20px; transition:opacity .5s, transform .5s;
+}
+#splash.hide { opacity:0; pointer-events:none; transform:scale(1.05); }
+.splash-logo {
+  width:90px; height:90px; border-radius:24px;
+  background: linear-gradient(135deg, #f5a623, #ff6b35);
+  display:flex; align-items:center; justify-content:center;
+  font-size:42px; animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
+#splash-name { font-family:var(--font-display); font-size:28px; font-weight:800; }
+#splash-sub { font-size:14px; color:var(--muted); }
+.splash-loader { width:48px; height:3px; background:var(--surface2); border-radius:2px; overflow:hidden; }
+.splash-loader::after {
+  content:''; display:block; height:100%; width:40%;
+  background:var(--accent); border-radius:2px;
+  animation: load 1.2s ease infinite;
+}
+@keyframes load { 0%{transform:translateX(-100%)} 100%{transform:translateX(300%)} }
+
+/* ──────────────── LAYOUT ──────────────── */
+#app { height:100%; display:flex; flex-direction:column; }
+.screen { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+.screen.hidden { display:none !important; }
+
+/* ──────────────── HEADER PÚBLICO ──────────────── */
+#pub-header {
+  position:sticky; top:0; z-index:100;
+  background: rgba(10,10,15,0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  padding: env(safe-area-inset-top, 0) 0 0;
+}
+.pub-header-inner {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 16px;
+}
+.resto-brand { display:flex; align-items:center; gap:12px; }
+.resto-avatar {
+  width:42px; height:42px; border-radius:12px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px; flex-shrink:0;
+}
+.resto-name { font-family:var(--font-display); font-size:17px; font-weight:700; line-height:1.1; }
+.resto-tagline { font-size:11px; color:var(--muted); margin-top:1px; }
+.header-actions { display:flex; gap:8px; }
+.btn-icon {
+  width:38px; height:38px; border-radius:10px; border:none; cursor:pointer;
+  background:var(--surface2); color:var(--text);
+  display:flex; align-items:center; justify-content:center; font-size:17px;
+  transition:.2s;
+}
+.btn-icon:active { transform:scale(.9); background:var(--surface); }
+
+/* ──────────────── CATEGORÍAS NAV ──────────────── */
+.cats-nav {
+  overflow-x:auto; white-space:nowrap;
+  padding:10px 16px; gap:8px; display:flex;
+  scrollbar-width:none;
+}
+.cats-nav::-webkit-scrollbar { display:none; }
+.cat-chip {
+  display:inline-flex; align-items:center; gap:6px;
+  padding:7px 14px; border-radius:50px; border:none; cursor:pointer;
+  background:var(--surface2); color:var(--muted);
+  font-family:var(--font-body); font-size:13px; font-weight:500;
+  transition:.2s; white-space:nowrap; flex-shrink:0;
+}
+.cat-chip.active {
+  background:var(--accent); color:#0a0a0f; font-weight:700;
+}
+.cat-chip:active { transform:scale(.94); }
+
+/* ──────────────── HERO BANNER ──────────────── */
+#pub-hero {
+  position:relative; margin:12px 16px; border-radius:20px; overflow:hidden;
+  height:180px; background:var(--surface2);
+}
+.hero-img { width:100%; height:100%; object-fit:cover; display:block; }
+.hero-overlay {
+  position:absolute; inset:0;
+  background:linear-gradient(to top, rgba(0,0,0,.8) 0%, transparent 55%);
+  display:flex; flex-direction:column; justify-content:flex-end;
+  padding:18px;
+}
+.hero-tag {
+  display:inline-block; padding:4px 10px; border-radius:50px;
+  background:var(--accent); color:#0a0a0f; font-size:11px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.6px; margin-bottom:8px;
+}
+.hero-title { font-family:var(--font-display); font-size:22px; font-weight:800; line-height:1.2; }
+.hero-sub { font-size:13px; color:rgba(255,255,255,.7); margin-top:3px; }
+
+/* ──────────────── FEED DE PLATOS ──────────────── */
+.section-title {
+  font-family:var(--font-display); font-size:16px; font-weight:700;
+  padding:6px 16px 10px; color:var(--text);
+}
+.feed-grid {
+  display:grid; grid-template-columns:1fr 1fr;
+  gap:12px; padding:0 16px 12px;
+}
+.feed-grid.list-view {
+  grid-template-columns:1fr;
+}
+
+/* Card cuadrada (grid) */
+.dish-card {
+  background:var(--surface); border-radius:var(--radius);
+  overflow:hidden; position:relative;
+  transition:transform .2s;
+  cursor:pointer;
+}
+.dish-card:active { transform:scale(.97); }
+.dish-thumb {
+  position:relative; padding-top:100%; /* square */
+  background:var(--surface2);
+  overflow:hidden;
+}
+.dish-thumb img {
+  position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+  transition: transform .4s;
+}
+.dish-card:hover .dish-thumb img { transform:scale(1.05); }
+.dish-thumb .no-img {
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:44px; background:var(--surface2);
+}
+.dish-badge-promo {
+  position:absolute; top:8px; left:8px; z-index:2;
+  background:var(--accent2); color:#fff; font-size:10px; font-weight:700;
+  padding:3px 8px; border-radius:50px; text-transform:uppercase; letter-spacing:.4px;
+}
+.dish-badge-agotado {
+  position:absolute; inset:0; z-index:3;
+  background:rgba(0,0,0,.65); display:flex; align-items:center; justify-content:center;
+  font-size:13px; font-weight:700; color:var(--muted); letter-spacing:.5px;
+}
+.dish-info { padding:10px 10px 12px; }
+.dish-name { font-family:var(--font-display); font-size:13px; font-weight:700; line-height:1.3; margin-bottom:3px; }
+.dish-desc { font-size:11px; color:var(--muted); line-height:1.4; margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.dish-bottom { display:flex; align-items:center; justify-content:space-between; }
+.dish-price { font-family:var(--font-display); font-size:15px; font-weight:800; color:var(--accent); }
+.btn-add {
+  width:28px; height:28px; border-radius:8px; border:none; cursor:pointer;
+  background:var(--accent); color:#0a0a0f; font-size:18px; font-weight:700;
+  display:flex; align-items:center; justify-content:center;
+  transition:.15s;
+}
+.btn-add:active { transform:scale(.88); }
+
+/* Card modo lista */
+.feed-grid.list-view .dish-card { display:flex; }
+.feed-grid.list-view .dish-thumb { width:100px; min-width:100px; padding-top:0; height:100px; flex-shrink:0; }
+.feed-grid.list-view .dish-thumb img { position:static; width:100%; height:100%; }
+.feed-grid.list-view .dish-thumb .no-img { position:static; width:100px; height:100px; font-size:34px; }
+.feed-grid.list-view .dish-info { flex:1; padding:12px; }
+.feed-grid.list-view .dish-desc { white-space:normal; overflow:visible; text-overflow:unset; }
+
+/* ──────────────── MODAL PLATO ──────────────── */
+#dish-modal {
+  position:fixed; inset:0; z-index:500;
+  background:rgba(0,0,0,.7); backdrop-filter:blur(6px);
+  display:flex; align-items:flex-end;
+  transition:opacity .25s;
+}
+#dish-modal.hidden { opacity:0; pointer-events:none; }
+#dish-modal .modal-box {
+  background:var(--surface);
+  border-radius:24px 24px 0 0;
+  width:100%; max-height:85vh; overflow-y:auto;
+  transform:translateY(0); transition:transform .3s;
+  padding-bottom:calc(env(safe-area-inset-bottom,0px) + 24px);
+}
+#dish-modal.hidden .modal-box { transform:translateY(100%); }
+.modal-img { width:100%; height:240px; object-fit:cover; background:var(--surface2); }
+.modal-img-placeholder { width:100%; height:160px; background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:64px; }
+.modal-body { padding:20px 20px 0; }
+.modal-title { font-family:var(--font-display); font-size:22px; font-weight:800; margin-bottom:6px; }
+.modal-desc { font-size:14px; color:var(--muted); line-height:1.6; margin-bottom:16px; }
+.modal-price { font-family:var(--font-display); font-size:26px; font-weight:800; color:var(--accent); margin-bottom:20px; }
+.modal-qty { display:flex; align-items:center; gap:16px; margin-bottom:20px; }
+.qty-btn { width:40px; height:40px; border-radius:12px; border:none; cursor:pointer; font-size:22px; font-weight:700; background:var(--surface2); color:var(--text); display:flex; align-items:center; justify-content:center; transition:.15s; }
+.qty-btn:active { transform:scale(.88); }
+.qty-num { font-family:var(--font-display); font-size:22px; font-weight:700; min-width:28px; text-align:center; }
+.btn-add-cart {
+  width:100%; padding:16px; border:none; cursor:pointer; border-radius:14px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#0a0a0f; font-family:var(--font-display); font-size:16px; font-weight:800;
+  display:flex; align-items:center; justify-content:space-between;
+  transition:.2s;
+}
+.btn-add-cart:active { transform:scale(.98); }
+.modal-close { position:absolute; top:16px; right:16px; width:34px; height:34px; border-radius:50%; border:none; cursor:pointer; background:rgba(0,0,0,.5); color:#fff; font-size:18px; display:flex; align-items:center; justify-content:center; }
+
+/* ──────────────── CARRITO ──────────────── */
+#cart-fab {
+  position:fixed; bottom:calc(env(safe-area-inset-bottom,0px) + 20px); right:16px; z-index:200;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#0a0a0f; border:none; cursor:pointer;
+  width:60px; height:60px; border-radius:20px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  font-size:24px; gap:1px;
+  box-shadow:0 8px 24px rgba(245,166,35,.4);
+  transition:.2s; transform:scale(0);
+}
+#cart-fab.show { transform:scale(1); }
+#cart-fab:active { transform:scale(.93); }
+.cart-count { font-size:10px; font-weight:800; font-family:var(--font-display); line-height:1; }
+
+#cart-drawer {
+  position:fixed; inset:0; z-index:400;
+  background:rgba(0,0,0,.75); backdrop-filter:blur(6px);
+  display:flex; align-items:flex-end;
+  transition:opacity .25s;
+}
+#cart-drawer.hidden { opacity:0; pointer-events:none; }
+.cart-box {
+  background:var(--surface); border-radius:24px 24px 0 0;
+  width:100%; max-height:80vh; display:flex; flex-direction:column;
+  transform:translateY(0); transition:transform .3s;
+}
+#cart-drawer.hidden .cart-box { transform:translateY(100%); }
+.cart-header { padding:20px 20px 12px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border); }
+.cart-header h3 { font-family:var(--font-display); font-size:18px; font-weight:800; }
+.cart-items { overflow-y:auto; flex:1; padding:12px 20px; }
+.cart-item { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); }
+.cart-item-name { flex:1; font-size:14px; font-weight:500; }
+.cart-item-qty { font-size:13px; color:var(--muted); }
+.cart-item-price { font-family:var(--font-display); font-size:14px; font-weight:700; color:var(--accent); }
+.cart-item-del { background:none; border:none; color:var(--muted); cursor:pointer; font-size:18px; padding:4px; }
+.cart-footer { padding:16px 20px; padding-bottom:calc(env(safe-area-inset-bottom,0px) + 16px); border-top:1px solid var(--border); }
+.cart-total { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+.cart-total span:first-child { font-size:14px; color:var(--muted); }
+.cart-total strong { font-family:var(--font-display); font-size:22px; font-weight:800; color:var(--accent); }
+.btn-checkout {
+  width:100%; padding:16px; border:none; cursor:pointer; border-radius:14px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#0a0a0f; font-family:var(--font-display); font-size:16px; font-weight:800;
+  transition:.2s;
+}
+.btn-checkout:active { transform:scale(.98); }
+
+/* ──────────────── CHECKOUT FORM ──────────────── */
+#checkout-screen {
+  position:fixed; inset:0; z-index:450; overflow-y:auto;
+  background:var(--bg);
+  transform:translateX(100%); transition:transform .3s;
+  padding-bottom:env(safe-area-inset-bottom,20px);
+}
+#checkout-screen.show { transform:translateX(0); }
+.checkout-header { display:flex; align-items:center; gap:12px; padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 16px; border-bottom:1px solid var(--border); }
+.checkout-header h2 { font-family:var(--font-display); font-size:18px; font-weight:800; }
+.form-group { padding:0 16px; margin-bottom:14px; }
+.form-label { font-size:12px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; display:block; }
+.form-input, .form-select {
+  width:100%; padding:14px; border-radius:12px; border:1px solid var(--border);
+  background:var(--surface); color:var(--text); font-family:var(--font-body); font-size:15px;
+  outline:none; transition:.2s;
+}
+.form-input:focus, .form-select:focus { border-color:var(--accent); }
+.form-select { appearance:none; }
+.tipo-btns { display:flex; gap:8px; }
+.tipo-btn {
+  flex:1; padding:12px; border:2px solid var(--surface2); border-radius:12px;
+  background:var(--surface); color:var(--muted); cursor:pointer; font-size:13px; font-weight:600;
+  display:flex; flex-direction:column; align-items:center; gap:4px; transition:.2s;
+}
+.tipo-btn.active { border-color:var(--accent); color:var(--accent); background:rgba(245,166,35,.08); }
+.tipo-btn span:first-child { font-size:22px; }
+.btn-whatsapp {
+  margin:16px; padding:16px; border:none; cursor:pointer; border-radius:14px;
+  background:#25D366; color:#fff;
+  font-family:var(--font-display); font-size:16px; font-weight:800;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  transition:.2s; width:calc(100% - 32px);
+}
+.btn-whatsapp:active { transform:scale(.98); }
+.order-summary { margin:16px; background:var(--surface); border-radius:16px; padding:16px; }
+.order-summary h4 { font-family:var(--font-display); font-size:14px; font-weight:700; margin-bottom:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+.os-item { display:flex; justify-content:space-between; font-size:13px; padding:4px 0; border-bottom:1px solid var(--border); }
+.os-total { display:flex; justify-content:space-between; font-family:var(--font-display); font-size:16px; font-weight:800; margin-top:10px; color:var(--accent); }
+
+/* ──────────────── ADMIN PANEL ──────────────── */
+#admin-screen {
+  position:fixed; inset:0; z-index:600; overflow-y:auto;
+  background:var(--bg);
+  transform:translateX(100%); transition:transform .3s;
+  padding-bottom:env(safe-area-inset-bottom,20px);
+}
+#admin-screen.show { transform:translateX(0); }
+.admin-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:calc(env(safe-area-inset-top,0px)+14px) 16px 14px;
+  background:var(--surface); border-bottom:1px solid var(--border);
+  position:sticky; top:0; z-index:10;
+}
+.admin-header h2 { font-family:var(--font-display); font-size:17px; font-weight:800; }
+.admin-tabs { display:flex; border-bottom:1px solid var(--border); background:var(--surface); }
+.admin-tab {
+  flex:1; padding:12px; background:none; border:none; cursor:pointer;
+  font-family:var(--font-body); font-size:13px; font-weight:600; color:var(--muted);
+  border-bottom:2px solid transparent; transition:.2s;
+}
+.admin-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+.admin-pane { padding:16px; }
+.admin-pane.hidden { display:none; }
+
+.card-setting { background:var(--surface); border-radius:16px; padding:16px; margin-bottom:14px; }
+.card-setting h4 { font-family:var(--font-display); font-size:14px; font-weight:700; margin-bottom:14px; color:var(--accent); text-transform:uppercase; letter-spacing:.5px; }
+
+.admin-dish-list { display:flex; flex-direction:column; gap:10px; margin-bottom:16px; }
+.admin-dish-item {
+  background:var(--surface); border-radius:14px; padding:12px 14px;
+  display:flex; align-items:center; gap:12px;
+}
+.admin-dish-emoji { font-size:28px; width:44px; text-align:center; flex-shrink:0; }
+.admin-dish-info { flex:1; min-width:0; }
+.admin-dish-name { font-weight:700; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.admin-dish-meta { font-size:12px; color:var(--muted); margin-top:2px; }
+.admin-dish-actions { display:flex; gap:6px; flex-shrink:0; }
+.btn-edit, .btn-del {
+  width:34px; height:34px; border-radius:10px; border:none; cursor:pointer;
+  display:flex; align-items:center; justify-content:center; font-size:15px;
+  transition:.15s;
+}
+.btn-edit { background:var(--surface2); color:var(--text); }
+.btn-del { background:rgba(255,80,80,.1); color:#ff5050; }
+.btn-edit:active, .btn-del:active { transform:scale(.88); }
+
+.btn-primary {
+  width:100%; padding:15px; border:none; cursor:pointer; border-radius:14px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#0a0a0f; font-family:var(--font-display); font-size:15px; font-weight:800;
+  transition:.2s;
+}
+.btn-primary:active { transform:scale(.98); }
+.btn-secondary {
+  width:100%; padding:14px; border:2px solid var(--border); cursor:pointer; border-radius:14px;
+  background:transparent; color:var(--text); font-family:var(--font-display); font-size:14px; font-weight:700;
+  transition:.2s; margin-top:8px;
+}
+.btn-secondary:active { transform:scale(.98); }
+
+/* Form en admin */
+.admin-form { background:var(--surface); border-radius:16px; padding:16px; margin-bottom:14px; }
+.admin-form h4 { font-family:var(--font-display); font-size:14px; font-weight:700; margin-bottom:14px; color:var(--accent); }
+
+.toggle-row { display:flex; align-items:center; justify-content:space-between; padding:6px 0; }
+.toggle-label { font-size:14px; }
+.toggle { width:46px; height:26px; background:var(--surface2); border-radius:13px; position:relative; cursor:pointer; transition:.2s; border:none; flex-shrink:0; }
+.toggle.on { background:var(--accent); }
+.toggle::after { content:''; position:absolute; width:20px; height:20px; background:#fff; border-radius:50%; top:3px; left:3px; transition:.2s; }
+.toggle.on::after { left:23px; }
+
+/* Upload img */
+.img-upload-area {
+  border:2px dashed var(--border); border-radius:12px; padding:20px;
+  text-align:center; cursor:pointer; transition:.2s; position:relative;
+}
+.img-upload-area:hover { border-color:var(--accent); }
+.img-upload-area input[type=file] { position:absolute; inset:0; opacity:0; cursor:pointer; }
+.img-upload-area p { font-size:13px; color:var(--muted); margin-top:6px; }
+.img-preview { width:100%; height:120px; object-fit:cover; border-radius:10px; margin-top:10px; display:none; }
+
+/* Colores del tema */
+.color-picker-row { display:flex; align-items:center; gap:10px; }
+.color-picker-row label { flex:1; font-size:13px; }
+.color-picker-row input[type=color] { width:44px; height:36px; border:none; border-radius:8px; cursor:pointer; background:none; padding:0; }
+
+/* Install banner */
+#install-banner {
+  position:fixed; bottom:calc(env(safe-area-inset-bottom,0px) + 90px); left:16px; right:16px; z-index:300;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:16px; padding:14px 16px;
+  display:flex; align-items:center; gap:12px;
+  box-shadow:0 8px 32px rgba(0,0,0,.5);
+  transform:translateY(20px); opacity:0; pointer-events:none;
+  transition:.4s cubic-bezier(.34,1.56,.64,1);
+}
+#install-banner.show { transform:translateY(0); opacity:1; pointer-events:all; }
+.install-icon { font-size:28px; flex-shrink:0; }
+.install-text { flex:1; }
+.install-text strong { font-family:var(--font-display); font-size:13px; font-weight:700; display:block; }
+.install-text span { font-size:11px; color:var(--muted); }
+.btn-install {
+  padding:9px 16px; border:none; cursor:pointer; border-radius:10px;
+  background:var(--accent); color:#0a0a0f; font-weight:800; font-size:13px;
+  white-space:nowrap; font-family:var(--font-display);
+}
+.btn-dismiss { background:none; border:none; cursor:pointer; color:var(--muted); font-size:20px; padding:4px; }
+
+/* Empty state */
+.empty-state { text-align:center; padding:60px 24px; color:var(--muted); }
+.empty-state .emoji { font-size:56px; margin-bottom:16px; }
+.empty-state h3 { font-family:var(--font-display); font-size:18px; font-weight:700; margin-bottom:8px; color:var(--text); }
+.empty-state p { font-size:14px; line-height:1.6; }
+
+/* Toast */
+#toast {
+  position:fixed; top:calc(env(safe-area-inset-top,0px) + 16px); left:50%; transform:translateX(-50%) translateY(-10px);
+  z-index:9999; background:var(--surface); border:1px solid var(--border);
+  padding:12px 20px; border-radius:50px; font-size:14px; font-weight:600;
+  white-space:nowrap; opacity:0; transition:.3s; pointer-events:none;
+  box-shadow:0 4px 20px rgba(0,0,0,.5);
+}
+#toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+/* Footer */
+.pub-footer { padding:24px 16px; text-align:center; color:var(--muted); font-size:11px; border-top:1px solid var(--border); margin-top:8px; }
+
+/* Animations */
+.dish-card { animation: fadeUp .4s ease backwards; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+.dish-card:nth-child(1){animation-delay:.04s}
+.dish-card:nth-child(2){animation-delay:.08s}
+.dish-card:nth-child(3){animation-delay:.12s}
+.dish-card:nth-child(4){animation-delay:.16s}
+.dish-card:nth-child(5){animation-delay:.2s}
+.dish-card:nth-child(6){animation-delay:.24s}
+
+@media(min-width:500px){
+  .feed-grid { grid-template-columns:1fr 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-logo" id="splash-logo">🍽️</div>
+  <div id="splash-name">MiMenú Digital</div>
+  <div id="splash-sub">Cargando tu menú...</div>
+  <div class="splash-loader"></div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- ── PANTALLA PÚBLICA ── -->
+  <div id="pub-screen" class="screen hidden">
+
+    <!-- Header -->
+    <div id="pub-header">
+      <div class="pub-header-inner">
+        <div class="resto-brand">
+          <div class="resto-avatar" id="pub-avatar">🍽️</div>
+          <div>
+            <div class="resto-name" id="pub-name">Mi Restaurante</div>
+            <div class="resto-tagline" id="pub-tagline">El sabor de siempre</div>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="btn-icon" id="btn-share" title="Compartir" onclick="shareMenu()">📤</button>
+          <button class="btn-icon" id="btn-list-view" onclick="toggleView()" title="Vista lista">▦</button>
+          <button class="btn-icon" onclick="openAdmin()" title="Admin">⚙️</button>
+        </div>
+      </div>
+      <!-- Categorías -->
+      <div class="cats-nav" id="cats-nav"></div>
+    </div>
+
+    <!-- Hero banner -->
+    <div id="pub-hero" style="display:none">
+      <img class="hero-img" id="hero-img" src="" alt="">
+      <div class="hero-overlay">
+        <span class="hero-tag">🔥 Destacado</span>
+        <div class="hero-title" id="hero-title"></div>
+        <div class="hero-sub" id="hero-sub"></div>
+      </div>
+    </div>
+
+    <!-- Feed -->
+    <div id="feed-container"></div>
+
+    <div class="pub-footer">Desarrollada por Vibras Positivas HM — Derechos de Autor Reservados</div>
+  </div>
+
+</div>
+
+<!-- ── MODAL PLATO ── -->
+<div id="dish-modal" class="hidden" onclick="closeDishModal(event)">
+  <div class="modal-box" style="position:relative">
+    <button class="modal-close" onclick="closeDishModal(null,true)">✕</button>
+    <div id="modal-img-wrap"></div>
+    <div class="modal-body">
+      <div class="modal-title" id="modal-title"></div>
+      <div class="modal-desc" id="modal-desc"></div>
+      <div class="modal-price" id="modal-price"></div>
+      <div class="modal-qty">
+        <button class="qty-btn" onclick="changeQty(-1)">−</button>
+        <span class="qty-num" id="modal-qty">1</span>
+        <button class="qty-btn" onclick="changeQty(1)">+</button>
+      </div>
+      <button class="btn-add-cart" onclick="addToCartFromModal()">
+        <span>Agregar al pedido</span>
+        <span id="modal-total-price"></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CARRITO FAB ── -->
+<button id="cart-fab" onclick="openCart()">
+  🛒
+  <span class="cart-count" id="cart-count">0</span>
+</button>
+
+<!-- ── DRAWER CARRITO ── -->
+<div id="cart-drawer" class="hidden" onclick="closeCart(event)">
+  <div class="cart-box">
+    <div class="cart-header">
+      <h3>🛒 Mi Pedido</h3>
+      <button class="btn-icon" onclick="closeCart(null,true)">✕</button>
+    </div>
+    <div class="cart-items" id="cart-items-list"></div>
+    <div class="cart-footer">
+      <div class="cart-total">
+        <span>Total</span>
+        <strong id="cart-total-price">$0</strong>
+      </div>
+      <button class="btn-checkout" onclick="openCheckout()">Continuar pedido →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CHECKOUT ── -->
+<div id="checkout-screen">
+  <div class="checkout-header">
+    <button class="btn-icon" onclick="closeCheckout()">←</button>
+    <h2>Completar Pedido</h2>
+  </div>
+  <div class="order-summary">
+    <h4>Resumen</h4>
+    <div id="os-items"></div>
+    <div class="os-total"><span>Total</span><span id="os-total"></span></div>
+  </div>
+  <div class="form-group">
+    <label class="form-label">¿Cómo lo recibes?</label>
+    <div class="tipo-btns">
+      <button class="tipo-btn active" onclick="setTipo('mesa',this)"><span>🪑</span>Mesa</button>
+      <button class="tipo-btn" onclick="setTipo('llevar',this)"><span>🥡</span>Para llevar</button>
+      <button class="tipo-btn" onclick="setTipo('domicilio',this)"><span>🛵</span>Domicilio</button>
+    </div>
+  </div>
+  <div class="form-group" id="mesa-field">
+    <label class="form-label">Número de mesa</label>
+    <input class="form-input" id="inp-mesa" type="number" placeholder="Ej: 5" min="1">
+  </div>
+  <div class="form-group hidden" id="nombre-field">
+    <label class="form-label">Tu nombre</label>
+    <input class="form-input" id="inp-nombre" type="text" placeholder="Nombre completo">
+  </div>
+  <div class="form-group hidden" id="tel-field">
+    <label class="form-label">Teléfono / WhatsApp</label>
+    <input class="form-input" id="inp-tel" type="tel" placeholder="3001234567">
+  </div>
+  <div class="form-group hidden" id="dir-field">
+    <label class="form-label">Dirección de entrega</label>
+    <input class="form-input" id="inp-dir" type="text" placeholder="Calle, barrio, referencia">
+    <button style="margin-top:8px;padding:10px 16px;border-radius:10px;border:none;background:var(--surface2);color:var(--text);cursor:pointer;font-size:13px;width:100%" onclick="getLocation()">📍 Usar mi ubicación</button>
+  </div>
+  <div class="form-group">
+    <label class="form-label">Notas adicionales (opcional)</label>
+    <input class="form-input" id="inp-notas" type="text" placeholder="Sin picante, sin cebolla...">
+  </div>
+  <button class="btn-whatsapp" onclick="sendWhatsApp()">
+    <span style="font-size:20px">💬</span> Enviar pedido por WhatsApp
+  </button>
+</div>
+
+<!-- ── ADMIN ── -->
+<div id="admin-screen">
+  <div class="admin-header">
+    <button class="btn-icon" onclick="closeAdmin()">←</button>
+    <h2>⚙️ Panel Admin</h2>
+    <button class="btn-icon" onclick="saveAll()">💾</button>
+  </div>
+  <div class="admin-tabs">
+    <button class="admin-tab active" onclick="showAdminTab('info',this)">Negocio</button>
+    <button class="admin-tab" onclick="showAdminTab('platos',this)">Platos</button>
+    <button class="admin-tab" onclick="showAdminTab('config',this)">Config</button>
+  </div>
+
+  <!-- Tab Negocio -->
+  <div class="admin-pane" id="tab-info">
+    <div class="card-setting">
+      <h4>Datos del Restaurante</h4>
+      <div class="form-group" style="padding:0;margin-bottom:12px">
+        <label class="form-label">Nombre</label>
+        <input class="form-input" id="a-nombre" type="text" placeholder="Ej: Restaurante La Fogata">
+      </div>
+      <div class="form-group" style="padding:0;margin-bottom:12px">
+        <label class="form-label">Slogan / Tagline</label>
+        <input class="form-input" id="a-tagline" type="text" placeholder="Ej: El sabor de siempre">
+      </div>
+      <div class="form-group" style="padding:0;margin-bottom:12px">
+        <label class="form-label">Emoji del logo</label>
+        <input class="form-input" id="a-emoji" type="text" placeholder="🍽️" maxlength="2">
+      </div>
+      <div class="form-group" style="padding:0;margin-bottom:12px">
+        <label class="form-label">WhatsApp del negocio (con código país)</label>
+        <input class="form-input" id="a-whatsapp" type="tel" placeholder="573001234567">
+      </div>
+      <div class="form-group" style="padding:0;margin-bottom:12px">
+        <label class="form-label">Descripción (para previsualización al compartir)</label>
+        <input class="form-input" id="a-desc" type="text" placeholder="Ej: La mejor comida de la ciudad">
+      </div>
+      <div class="form-group" style="padding:0;margin-bottom:0">
+        <label class="form-label">Imagen de portada (banner hero)</label>
+        <div class="img-upload-area">
+          <div style="font-size:32px">🖼️</div>
+          <p>Toca para subir imagen del restaurante</p>
+          <input type="file" accept="image/*" onchange="loadHeroImg(this)">
+          <img class="img-preview" id="hero-preview">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab Platos -->
+  <div class="admin-pane hidden" id="tab-platos">
+    <div id="admin-dish-list-wrap"></div>
+    <div class="admin-form" id="dish-form">
+      <h4 id="dish-form-title">➕ Nuevo Plato</h4>
+      <div class="form-group" style="padding:0;margin-bottom:10px">
+        <label class="form-label">Nombre del plato</label>
+        <input class="form-input" id="df-nombre" type="text" placeholder="Ej: Bandeja Paisa">
+      </div>
+      <div class="form-group" style="padding:0;margin-bottom:10px">
+        <label class="form-label">Descripción corta</label>
+        <input class="form-input" id="df-desc" type="text" placeholder="Ej: Con arroz, frijoles, chicharrón...">
+      </div>
+      <div class="form-group" style="padding:0;margin-bottom:10px">
+        <label class="form-label">Precio (COP sin puntos)</label>
+        <input class="form-input" id="df-precio" type="number" placeholder="25000" min="0">
+      </div>
+      <div class="form-group" style="padding:0;margin-bottom:10px">
+        <label class="form-label">Categoría</label>
+        <input class="form-input" id="df-cat" type="text" placeholder="Ej: Platos fuertes, Bebidas...">
+      </div>
+      <div class="form-group" style="padding:0;margin-bottom:10px">
+        <label class="form-label">Emoji representativo</label>
+        <input class="form-input" id="df-emoji" type="text" placeholder="🍛" maxlength="2">
+      </div>
+      <div class="form-group" style="padding:0;margin-bottom:10px">
+        <label class="form-label">Foto del plato</label>
+        <div class="img-upload-area">
+          <div style="font-size:28px">📷</div>
+          <p>Toca para subir foto</p>
+          <input type="file" accept="image/*" onchange="loadDishImg(this)">
+          <img class="img-preview" id="dish-img-preview">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <div style="flex:1">
+          <label class="form-label">¿En promoción?</label>
+          <button class="toggle" id="df-promo" onclick="this.classList.toggle('on')"></button>
+        </div>
+        <div style="flex:1">
+          <label class="form-label">¿Disponible?</label>
+          <button class="toggle on" id="df-disponible" onclick="this.classList.toggle('on')"></button>
+        </div>
+      </div>
+      <input type="hidden" id="df-editing-id" value="">
+      <button class="btn-primary" onclick="saveDish()">Guardar plato</button>
+      <button class="btn-secondary" onclick="clearDishForm()">Limpiar formulario</button>
+    </div>
+  </div>
+
+  <!-- Tab Config -->
+  <div class="admin-pane hidden" id="tab-config">
+    <div class="card-setting">
+      <h4>Apariencia</h4>
+      <div class="color-picker-row" style="margin-bottom:12px">
+        <label>Color principal (acento)</label>
+        <input type="color" id="cfg-accent" value="#f5a623" onchange="updateAccent(this.value)">
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">Mostrar banner hero en inicio</span>
+        <button class="toggle on" id="cfg-hero" onclick="this.classList.toggle('on')"></button>
+      </div>
+    </div>
+    <div class="card-setting">
+      <h4>Pedidos</h4>
+      <div class="toggle-row">
+        <span class="toggle-label">Activar pedidos por WhatsApp</span>
+        <button class="toggle on" id="cfg-pedidos" onclick="this.classList.toggle('on')"></button>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">Pedido a domicilio</span>
+        <button class="toggle on" id="cfg-domicilio" onclick="this.classList.toggle('on')"></button>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">Pedir en mesa</span>
+        <button class="toggle on" id="cfg-mesa" onclick="this.classList.toggle('on')"></button>
+      </div>
+    </div>
+    <div class="card-setting">
+      <h4>Mensaje personalizado de pedido</h4>
+      <textarea class="form-input" id="cfg-msg" rows="4" placeholder="Ej: Hola! Quiero hacer el siguiente pedido desde el menú digital:"></textarea>
+    </div>
+    <button class="btn-primary" onclick="saveAll()">💾 Guardar configuración</button>
+  </div>
+</div>
+
+<!-- INSTALL BANNER -->
+<div id="install-banner">
+  <div class="install-icon">📲</div>
+  <div class="install-text">
+    <strong>Instala la app</strong>
+    <span>Acceso rápido desde tu pantalla</span>
+  </div>
+  <button class="btn-install" id="btn-install-action">Instalar</button>
+  <button class="btn-dismiss" onclick="dismissInstall()">✕</button>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+//  ESTADO GLOBAL
+// ═══════════════════════════════════════════
+let state = {
+  negocio: {
+    nombre: 'Mi Restaurante',
+    tagline: 'El sabor de siempre 🔥',
+    emoji: '🍽️',
+    whatsapp: '',
+    desc: 'Ve nuestro menú completo con fotos y precios',
+    heroImg: '',
+  },
+  platos: [],
+  config: {
+    accent: '#f5a623',
+    showHero: true,
+    pedidos: true,
+    domicilio: true,
+    mesa: true,
+    msgPedido: '¡Hola! Quiero hacer el siguiente pedido desde el menú digital 🍽️:\n\n'
+  }
+};
+let cart = [];
+let currentDish = null;
+let currentQty = 1;
+let currentTipo = 'mesa';
+let currentCat = 'all';
+let listView = false;
+let deferredPrompt = null;
+let heroImgData = '';
+let dishImgData = '';
+
+// ═══════════════════════════════════════════
+//  LOCAL STORAGE
+// ═══════════════════════════════════════════
+function loadState() {
+  try {
+    const s = localStorage.getItem('menu_state');
+    if (s) state = { ...state, ...JSON.parse(s) };
+  } catch(e) {}
+}
+function saveState() {
+  try { localStorage.setItem('menu_state', JSON.stringify(state)); } catch(e) {}
+}
+
+// ═══════════════════════════════════════════
+//  RENDER PÚBLICO
+// ═══════════════════════════════════════════
+function renderPublic() {
+  const n = state.negocio;
+  document.getElementById('pub-name').textContent = n.nombre;
+  document.getElementById('pub-tagline').textContent = n.tagline;
+  document.getElementById('pub-avatar').textContent = n.emoji || '🍽️';
+  document.title = n.nombre;
+  document.getElementById('page-title').textContent = n.nombre;
+
+  // OG meta
+  document.getElementById('og-title').content = n.nombre;
+  document.getElementById('og-desc').content = n.desc;
+  document.getElementById('tw-title').content = n.nombre;
+  document.getElementById('tw-desc').content = n.desc;
+  if (n.heroImg) {
+    document.getElementById('og-image').content = n.heroImg;
+    document.getElementById('tw-image').content = n.heroImg;
+  }
+
+  // Hero
+  const heroEl = document.getElementById('pub-hero');
+  if (n.heroImg && state.config.showHero) {
+    document.getElementById('hero-img').src = n.heroImg;
+    const featured = state.platos.find(p => p.promo && p.disponible) || state.platos.find(p => p.disponible);
+    if (featured) {
+      document.getElementById('hero-title').textContent = featured.nombre;
+      document.getElementById('hero-sub').textContent = featured.desc;
+    }
+    heroEl.style.display = '';
+  } else {
+    heroEl.style.display = 'none';
+  }
+
+  // Accent
+  document.documentElement.style.setProperty('--accent', state.config.accent || '#f5a623');
+
+  renderCats();
+  renderFeed();
+}
+
+function renderCats() {
+  const cats = ['all', ...new Set(state.platos.map(p => p.cat).filter(Boolean))];
+  const nav = document.getElementById('cats-nav');
+  nav.innerHTML = cats.map(c => `
+    <button class="cat-chip${c === currentCat ? ' active' : ''}" onclick="filterCat('${c}')">
+      ${c === 'all' ? '🍽️ Todo' : c}
+    </button>
+  `).join('');
+}
+
+function filterCat(cat) {
+  currentCat = cat;
+  renderCats();
+  renderFeed();
+}
+
+function renderFeed() {
+  const container = document.getElementById('feed-container');
+  let platos = state.platos;
+  if (currentCat !== 'all') platos = platos.filter(p => p.cat === currentCat);
+
+  if (!platos.length) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="emoji">🍴</div>
+      <h3>Menú en construcción</h3>
+      <p>El restaurante aún no ha publicado platos.<br>¡Vuelve pronto!</p>
+    </div>`;
+    return;
+  }
+
+  const cats = currentCat === 'all'
+    ? [...new Set(platos.map(p => p.cat).filter(Boolean)), ...(platos.some(p => !p.cat) ? ['Sin categoría'] : [])]
+    : [currentCat];
+
+  let html = '';
+  cats.forEach(cat => {
+    const items = platos.filter(p => (p.cat || 'Sin categoría') === cat);
+    if (!items.length) return;
+    html += `<div class="section-title">${cat}</div>`;
+    html += `<div class="feed-grid${listView ? ' list-view' : ''}" id="grid-${cat.replace(/\s/g,'_')}">`;
+    items.forEach((p, i) => {
+      html += dishCard(p, i);
+    });
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+  updateCartFab();
+}
+
+function dishCard(p, i) {
+  const imgHtml = p.img
+    ? `<img src="${p.img}" alt="${p.nombre}" loading="lazy">`
+    : `<div class="no-img">${p.emoji || '🍽️'}</div>`;
+  const badge = p.promo ? '<div class="dish-badge-promo">Promo</div>' : '';
+  const agotado = !p.disponible ? '<div class="dish-badge-agotado">AGOTADO</div>' : '';
+  const precio = formatPrice(p.precio);
+  const addBtn = state.config.pedidos && p.disponible
+    ? `<button class="btn-add" onclick="event.stopPropagation();quickAdd('${p.id}')">+</button>`
+    : '';
+  return `
+    <div class="dish-card" onclick="openDishModal('${p.id}')">
+      <div class="dish-thumb">
+        ${badge}
+        ${imgHtml}
+        ${agotado}
+      </div>
+      <div class="dish-info">
+        <div class="dish-name">${p.nombre}</div>
+        <div class="dish-desc">${p.desc || ''}</div>
+        <div class="dish-bottom">
+          <span class="dish-price">${precio}</span>
+          ${addBtn}
+        </div>
+      </div>
+    </div>`;
+}
+
+function formatPrice(v) {
+  if (!v && v !== 0) return '';
+  return '$' + Number(v).toLocaleString('es-CO');
+}
+
+function toggleView() {
+  listView = !listView;
+  document.getElementById('btn-list-view').textContent = listView ? '⊞' : '▦';
+  renderFeed();
+}
+
+// ═══════════════════════════════════════════
+//  MODAL PLATO
+// ═══════════════════════════════════════════
+function openDishModal(id) {
+  const p = state.platos.find(x => x.id === id);
+  if (!p) return;
+  currentDish = p;
+  currentQty = 1;
+  document.getElementById('modal-title').textContent = p.nombre;
+  document.getElementById('modal-desc').textContent = p.desc || '';
+  document.getElementById('modal-price').textContent = formatPrice(p.precio);
+  document.getElementById('modal-qty').textContent = 1;
+  updateModalTotal();
+  const wrap = document.getElementById('modal-img-wrap');
+  wrap.innerHTML = p.img
+    ? `<img class="modal-img" src="${p.img}" alt="${p.nombre}">`
+    : `<div class="modal-img-placeholder">${p.emoji || '🍽️'}</div>`;
+  document.getElementById('dish-modal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDishModal(e, force) {
+  if (!force && e && e.target !== document.getElementById('dish-modal')) return;
+  document.getElementById('dish-modal').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function changeQty(d) {
+  currentQty = Math.max(1, currentQty + d);
+  document.getElementById('modal-qty').textContent = currentQty;
+  updateModalTotal();
+}
+
+function updateModalTotal() {
+  if (!currentDish) return;
+  document.getElementById('modal-total-price').textContent = formatPrice(currentDish.precio * currentQty);
+}
+
+function addToCartFromModal() {
+  if (!currentDish) return;
+  addToCart(currentDish.id, currentQty);
+  closeDishModal(null, true);
+  showToast(`✅ ${currentDish.nombre} agregado`);
+}
+
+function quickAdd(id) {
+  addToCart(id, 1);
+  const p = state.platos.find(x => x.id === id);
+  showToast(`✅ ${p?.nombre || 'Plato'} agregado`);
+}
+
+// ═══════════════════════════════════════════
+//  CARRITO
+// ═══════════════════════════════════════════
+function addToCart(id, qty) {
+  const existing = cart.find(x => x.id === id);
+  if (existing) existing.qty += qty;
+  else {
+    const p = state.platos.find(x => x.id === id);
+    if (p) cart.push({ id, qty, nombre: p.nombre, precio: p.precio, emoji: p.emoji });
+  }
+  updateCartFab();
+}
+
+function removeFromCart(id) {
+  cart = cart.filter(x => x.id !== id);
+  updateCartFab();
+  renderCartItems();
+}
+
+function updateCartFab() {
+  const fab = document.getElementById('cart-fab');
+  const total = cart.reduce((s, x) => s + x.qty, 0);
+  document.getElementById('cart-count').textContent = total;
+  if (total > 0 && state.config.pedidos) fab.classList.add('show');
+  else fab.classList.remove('show');
+}
+
+function openCart() {
+  renderCartItems();
+  document.getElementById('cart-drawer').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeCart(e, force) {
+  if (!force && e && e.target !== document.getElementById('cart-drawer')) return;
+  document.getElementById('cart-drawer').classList.add('hidden');
+  document.body.style.overflow = '';
+}
+
+function renderCartItems() {
+  const list = document.getElementById('cart-items-list');
+  if (!cart.length) {
+    list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--muted)">Tu carrito está vacío</div>';
+    document.getElementById('cart-total-price').textContent = '$0';
+    return;
+  }
+  list.innerHTML = cart.map(item => `
+    <div class="cart-item">
+      <span style="font-size:22px">${item.emoji || '🍽️'}</span>
+      <span class="cart-item-name">${item.nombre}</span>
+      <span class="cart-item-qty">×${item.qty}</span>
+      <span class="cart-item-price">${formatPrice(item.precio * item.qty)}</span>
+      <button class="cart-item-del" onclick="removeFromCart('${item.id}')">🗑</button>
+    </div>
+  `).join('');
+  const total = cart.reduce((s, x) => s + x.precio * x.qty, 0);
+  document.getElementById('cart-total-price').textContent = formatPrice(total);
+}
+
+// ═══════════════════════════════════════════
+//  CHECKOUT
+// ═══════════════════════════════════════════
+function openCheckout() {
+  closeCart(null, true);
+  renderOrderSummary();
+  document.getElementById('checkout-screen').classList.add('show');
+}
+
+function closeCheckout() {
+  document.getElementById('checkout-screen').classList.remove('show');
+}
+
+function renderOrderSummary() {
+  const items = document.getElementById('os-items');
+  items.innerHTML = cart.map(x => `
+    <div class="os-item">
+      <span>${x.emoji || '🍽️'} ${x.nombre} ×${x.qty}</span>
+      <span>${formatPrice(x.precio * x.qty)}</span>
+    </div>
+  `).join('');
+  const total = cart.reduce((s, x) => s + x.precio * x.qty, 0);
+  document.getElementById('os-total').textContent = formatPrice(total);
+}
+
+function setTipo(tipo, btn) {
+  currentTipo = tipo;
+  document.querySelectorAll('.tipo-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('mesa-field').classList.toggle('hidden', tipo !== 'mesa');
+  document.getElementById('nombre-field').classList.toggle('hidden', tipo === 'mesa');
+  document.getElementById('tel-field').classList.toggle('hidden', tipo === 'mesa');
+  document.getElementById('dir-field').classList.toggle('hidden', tipo !== 'domicilio');
+}
+
+function getLocation() {
+  if (!navigator.geolocation) return showToast('GPS no disponible');
+  navigator.geolocation.getCurrentPosition(pos => {
+    const { latitude: lat, longitude: lng } = pos.coords;
+    document.getElementById('inp-dir').value = `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`;
+    showToast('📍 Ubicación capturada');
+  }, () => showToast('No se pudo obtener ubicación'));
+}
+
+function sendWhatsApp() {
+  const wa = state.negocio.whatsapp;
+  if (!wa) { showToast('⚠️ No hay WhatsApp configurado'); return; }
+
+  let msg = state.config.msgPedido || '¡Hola! Pedido desde el menú digital:\n\n';
+  msg += '*PEDIDO:*\n';
+  cart.forEach(x => {
+    msg += `• ${x.emoji || ''} ${x.nombre} ×${x.qty} → ${formatPrice(x.precio * x.qty)}\n`;
+  });
+  const total = cart.reduce((s, x) => s + x.precio * x.qty, 0);
+  msg += `\n*Total: ${formatPrice(total)}*\n\n`;
+
+  if (currentTipo === 'mesa') {
+    const mesa = document.getElementById('inp-mesa').value;
+    msg += `🪑 *Mesa:* ${mesa || 'No especificada'}\n`;
+  } else if (currentTipo === 'llevar') {
+    const nom = document.getElementById('inp-nombre').value;
+    const tel = document.getElementById('inp-tel').value;
+    msg += `🥡 *Para llevar*\n👤 ${nom}\n📞 ${tel}\n`;
+  } else {
+    const nom = document.getElementById('inp-nombre').value;
+    const tel = document.getElementById('inp-tel').value;
+    const dir = document.getElementById('inp-dir').value;
+    msg += `🛵 *Domicilio*\n👤 ${nom}\n📞 ${tel}\n📍 ${dir}\n`;
+  }
+
+  const notas = document.getElementById('inp-notas').value;
+  if (notas) msg += `\n📝 ${notas}`;
+
+  const url = `https://wa.me/${wa}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+
+  // Limpiar
+  cart = [];
+  updateCartFab();
+  closeCheckout();
+  showToast('🎉 ¡Pedido enviado!');
+}
+
+// ═══════════════════════════════════════════
+//  COMPARTIR
+// ═══════════════════════════════════════════
+function shareMenu() {
+  const data = {
+    title: state.negocio.nombre,
+    text: state.negocio.desc,
+    url: window.location.href
+  };
+  if (navigator.share) {
+    navigator.share(data).catch(() => {});
+  } else {
+    navigator.clipboard.writeText(window.location.href).then(() => showToast('📋 Link copiado'));
+  }
+}
+
+// ═══════════════════════════════════════════
+//  ADMIN
+// ═══════════════════════════════════════════
+function openAdmin() {
+  loadAdminFields();
+  document.getElementById('admin-screen').classList.add('show');
+}
+
+function closeAdmin() {
+  document.getElementById('admin-screen').classList.remove('show');
+}
+
+function showAdminTab(tab, btn) {
+  ['info','platos','config'].forEach(t => {
+    document.getElementById(`tab-${t}`).classList.toggle('hidden', t !== tab);
+  });
+  document.querySelectorAll('.admin-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (tab === 'platos') renderAdminDishes();
+}
+
+function loadAdminFields() {
+  const n = state.negocio;
+  document.getElementById('a-nombre').value = n.nombre;
+  document.getElementById('a-tagline').value = n.tagline;
+  document.getElementById('a-emoji').value = n.emoji;
+  document.getElementById('a-whatsapp').value = n.whatsapp;
+  document.getElementById('a-desc').value = n.desc;
+  if (n.heroImg) {
+    const prev = document.getElementById('hero-preview');
+    prev.src = n.heroImg; prev.style.display = 'block';
+  }
+  document.getElementById('cfg-accent').value = state.config.accent;
+  document.getElementById('cfg-msg').value = state.config.msgPedido;
+  setToggle('cfg-hero', state.config.showHero);
+  setToggle('cfg-pedidos', state.config.pedidos);
+  setToggle('cfg-domicilio', state.config.domicilio);
+  setToggle('cfg-mesa', state.config.mesa);
+  heroImgData = n.heroImg || '';
+}
+
+function setToggle(id, val) {
+  const el = document.getElementById(id);
+  if (val) el.classList.add('on'); else el.classList.remove('on');
+}
+
+function loadHeroImg(input) {
+  const f = input.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = e => {
+    heroImgData = e.target.result;
+    const prev = document.getElementById('hero-preview');
+    prev.src = heroImgData; prev.style.display = 'block';
+  };
+  r.readAsDataURL(f);
+}
+
+function loadDishImg(input) {
+  const f = input.files[0]; if (!f) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    dishImgData = e.target.result;
+    const prev = document.getElementById('dish-img-preview');
+    prev.src = dishImgData; prev.style.display = 'block';
+  };
+  reader.readAsDataURL(f);
+}
+
+function renderAdminDishes() {
+  const wrap = document.getElementById('admin-dish-list-wrap');
+  if (!state.platos.length) {
+    wrap.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:13px">No hay platos aún. ¡Agrega el primero!</div>';
+    return;
+  }
+  wrap.innerHTML = `<div class="admin-dish-list">${state.platos.map(p => `
+    <div class="admin-dish-item">
+      <div class="admin-dish-emoji">${p.img ? `<img src="${p.img}" style="width:44px;height:44px;border-radius:10px;object-fit:cover">` : (p.emoji || '🍽️')}</div>
+      <div class="admin-dish-info">
+        <div class="admin-dish-name">${p.nombre}</div>
+        <div class="admin-dish-meta">${p.cat || '—'} · ${formatPrice(p.precio)}${!p.disponible ? ' · <span style="color:#ff5050">Agotado</span>' : ''}</div>
+      </div>
+      <div class="admin-dish-actions">
+        <button class="btn-edit" onclick="editDish('${p.id}')">✏️</button>
+        <button class="btn-del" onclick="deleteDish('${p.id}')">🗑</button>
+      </div>
+    </div>
+  `).join('')}</div>`;
+}
+
+function saveDish() {
+  const nombre = document.getElementById('df-nombre').value.trim();
+  const desc = document.getElementById('df-desc').value.trim();
+  const precio = parseFloat(document.getElementById('df-precio').value) || 0;
+  const cat = document.getElementById('df-cat').value.trim();
+  const emoji = document.getElementById('df-emoji').value.trim();
+  const promo = document.getElementById('df-promo').classList.contains('on');
+  const disponible = document.getElementById('df-disponible').classList.contains('on');
+  const editingId = document.getElementById('df-editing-id').value;
+
+  if (!nombre) { showToast('⚠️ Ingresa el nombre del plato'); return; }
+  if (!precio) { showToast('⚠️ Ingresa el precio'); return; }
+
+  if (editingId) {
+    const idx = state.platos.findIndex(p => p.id === editingId);
+    if (idx >= 0) {
+      state.platos[idx] = { ...state.platos[idx], nombre, desc, precio, cat, emoji, promo, disponible };
+      if (dishImgData) state.platos[idx].img = dishImgData;
+    }
+    showToast('✅ Plato actualizado');
+  } else {
+    state.platos.push({
+      id: 'p_' + Date.now(),
+      nombre, desc, precio, cat, emoji, promo, disponible,
+      img: dishImgData || ''
+    });
+    showToast('✅ Plato agregado');
+  }
+  saveState();
+  clearDishForm();
+  renderAdminDishes();
+  renderPublic();
+}
+
+function editDish(id) {
+  const p = state.platos.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('df-nombre').value = p.nombre;
+  document.getElementById('df-desc').value = p.desc;
+  document.getElementById('df-precio').value = p.precio;
+  document.getElementById('df-cat').value = p.cat || '';
+  document.getElementById('df-emoji').value = p.emoji || '';
+  setToggle('df-promo', p.promo);
+  setToggle('df-disponible', p.disponible);
+  document.getElementById('df-editing-id').value = id;
+  document.getElementById('dish-form-title').textContent = '✏️ Editar Plato';
+  dishImgData = p.img || '';
+  if (p.img) {
+    const prev = document.getElementById('dish-img-preview');
+    prev.src = p.img; prev.style.display = 'block';
+  }
+  document.getElementById('dish-form').scrollIntoView({ behavior: 'smooth' });
+}
+
+function deleteDish(id) {
+  if (!confirm('¿Eliminar este plato?')) return;
+  state.platos = state.platos.filter(p => p.id !== id);
+  saveState();
+  renderAdminDishes();
+  renderPublic();
+  showToast('🗑 Plato eliminado');
+}
+
+function clearDishForm() {
+  ['df-nombre','df-desc','df-precio','df-cat','df-emoji'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('df-editing-id').value = '';
+  document.getElementById('dish-form-title').textContent = '➕ Nuevo Plato';
+  document.getElementById('df-promo').classList.remove('on');
+  document.getElementById('df-disponible').classList.add('on');
+  document.getElementById('dish-img-preview').style.display = 'none';
+  dishImgData = '';
+}
+
+function saveAll() {
+  state.negocio.nombre = document.getElementById('a-nombre').value.trim() || state.negocio.nombre;
+  state.negocio.tagline = document.getElementById('a-tagline').value.trim() || state.negocio.tagline;
+  state.negocio.emoji = document.getElementById('a-emoji').value.trim() || '🍽️';
+  state.negocio.whatsapp = document.getElementById('a-whatsapp').value.trim();
+  state.negocio.desc = document.getElementById('a-desc').value.trim() || state.negocio.desc;
+  if (heroImgData) state.negocio.heroImg = heroImgData;
+  state.config.accent = document.getElementById('cfg-accent').value;
+  state.config.msgPedido = document.getElementById('cfg-msg').value;
+  state.config.showHero = document.getElementById('cfg-hero').classList.contains('on');
+  state.config.pedidos = document.getElementById('cfg-pedidos').classList.contains('on');
+  state.config.domicilio = document.getElementById('cfg-domicilio').classList.contains('on');
+  state.config.mesa = document.getElementById('cfg-mesa').classList.contains('on');
+  saveState();
+  renderPublic();
+  showToast('💾 Configuración guardada');
+}
+
+function updateAccent(val) {
+  document.documentElement.style.setProperty('--accent', val);
+}
+
+// ═══════════════════════════════════════════
+//  INSTALL PWA
+// ═══════════════════════════════════════════
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  setTimeout(() => document.getElementById('install-banner').classList.add('show'), 3000);
+});
+
+document.getElementById('btn-install-action').addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  dismissInstall();
+  if (outcome === 'accepted') showToast('✅ App instalada');
+});
+
+function dismissInstall() {
+  document.getElementById('install-banner').classList.remove('show');
+}
+
+window.addEventListener('appinstalled', () => {
+  dismissInstall();
+  showToast('🎉 ¡App instalada!');
+});
+
+// ═══════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
+function init() {
+  loadState();
+
+  // Demo platos si no hay ninguno
+  if (!state.platos.length) {
+    state.platos = [
+      { id:'p1', nombre:'Bandeja Paisa', desc:'Frijoles, arroz, chicharrón, huevo, aguacate', precio:28000, cat:'Platos fuertes', emoji:'🍛', promo:true, disponible:true, img:'' },
+      { id:'p2', nombre:'Sancocho de Gallina', desc:'Receta tradicional con mazorca y papa', precio:22000, cat:'Platos fuertes', emoji:'🍲', promo:false, disponible:true, img:'' },
+      { id:'p3', nombre:'Empanadas (x3)', desc:'Rellenas de carne y papa, con ají', precio:8000, cat:'Entradas', emoji:'🥟', promo:true, disponible:true, img:'' },
+      { id:'p4', nombre:'Limonada de coco', desc:'Refrescante, con leche de coco', precio:7000, cat:'Bebidas', emoji:'🥤', promo:false, disponible:true, img:'' },
+      { id:'p5', nombre:'Arroz con leche', desc:'Postre casero con canela y pasas', precio:6000, cat:'Postres', emoji:'🍮', promo:false, disponible:true, img:'' },
+      { id:'p6', nombre:'Chuleta de cerdo', desc:'Apanada o a la plancha, con papas', precio:24000, cat:'Platos fuertes', emoji:'🥩', promo:false, disponible:false, img:'' },
+    ];
+    saveState();
+  }
+
+  renderPublic();
+
+  // Ocultar splash
+  setTimeout(() => {
+    document.getElementById('splash').classList.add('hide');
+    document.getElementById('pub-screen').classList.remove('hidden');
+  }, 1800);
+}
+
+// Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+
+init();
+</script>
+</body>
+</html>
